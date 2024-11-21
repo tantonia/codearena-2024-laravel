@@ -15,8 +15,15 @@ class Post extends Model
         'published_at' => 'datetime',
     ];
 
+    protected $fillable = ['title', 'body', 'user_id', 'published_at'];
+
     public function author()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class)->orderBy('created_at', 'desc');
     }
 }

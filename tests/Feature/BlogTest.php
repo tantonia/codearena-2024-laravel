@@ -391,6 +391,45 @@ class BlogTest extends TestCase
      */
     public function testBlogPostsPageHasPagination()
     {
-        $this->markTestIncomplete();
+        // Create a user
+        $user = User::factory()->create();
+
+        // Create 25 posts for the user with `published_at` and `image`
+        $posts = Post::factory(25)->create([
+            'user_id' => $user->id,
+            'published_at' => now(),
+            'image' => 'test-image.jpg',
+        ]);
+
+        // Ensure the posts are ordered by 'promoted' and 'published_at'
+        $posts = $posts->sortByDesc('promoted')
+            ->sortByDesc('published_at')
+            ->values();
+
+        // Visit the first page of the blog posts
+        $response = $this->get(route('posts'));
+
+        // Assert the first page shows the first 12 posts and not the 13th
+        $response->assertStatus(200);
+        $response->assertSee($posts[0]->title);  // First post
+        $response->assertSee($posts[11]->title); // 12th post
+        $response->assertDontSee($posts[12]->title); // Ensure 13th post is not on the first page
+
+        // Visit the second page of the blog posts
+        $response = $this->get(route('posts', ['page' => 2]));
+
+        // Assert the second page shows the next set of 12 posts
+        $response->assertStatus(200);
+        $response->assertSee($posts[12]->title); // 13th post
+        $response->assertSee($posts[23]->title); // 24th post
+        $response->assertDontSee($posts[24]->title); // Ensure 25th post is not on the second page
+
+        // Visit the third page of the blog posts (only 1 post left)
+        $response = $this->get(route('posts', ['page' => 3]));
+
+        // Assert the third page shows the remaining post
+        $response->assertStatus(200);
+        $response->assertSee($posts[24]->title); // 25th post
+        $response->assertDontSee($posts[0]->title); // Ensure first page posts are not shown
     }
 }
